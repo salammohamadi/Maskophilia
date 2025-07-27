@@ -13,6 +13,7 @@ export const Popup = () => {
       const response = await chrome.runtime.sendMessage<SendMessage, ExtensionSettings>({
         type: 'getSettings',
       });
+
       setMaskingEnabled(response.maskingEnabled);
       setError(null);
     } catch (err) {
@@ -25,12 +26,13 @@ export const Popup = () => {
   const toggleMasking = async () => {
     try {
       const response = await chrome.runtime.sendMessage<
-        SendMessage & { enabled: boolean },
+        SendMessage & { maskingEnabled: boolean },
         ExtensionSettings
       >({
         type: 'toggleMasking',
-        enabled: !maskingEnabled,
+        maskingEnabled: !maskingEnabled,
       });
+
       setMaskingEnabled(response.maskingEnabled);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to toggle masking');
