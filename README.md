@@ -1,6 +1,38 @@
-# React + TypeScript + Vite
+# Maskophilia - React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+## Docker & CI/CD Setup
+
+This project includes Docker containerization and GitHub Actions for automated builds:
+
+### Docker
+
+- **Dockerfile**: Multi-stage build with Node.js for building and Nginx for serving
+- **Build**: `docker build -t maskophilia-app .`
+- **Run**: `docker run -p 3000:80 maskophilia-app`
+
+### GitHub Actions
+
+- **Workflow**: `.github/workflows/docker-build.yml`
+- **Trigger**: Automatically runs on push to main branch
+- **Actions**: Builds Docker image, runs container for testing, and cleans up
+
+### Local Development
+
+```bash
+# Install dependencies
+yarn install
+
+# Start development server
+yarn dev
+
+# Build for production
+yarn build
+
+# Preview production build
+yarn preview
+```
 
 Currently, two official plugins are available:
 
@@ -36,15 +68,15 @@ export default tseslint.config([
       // other options...
     },
   },
-])
+]);
 ```
 
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
 // eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+import reactX from 'eslint-plugin-react-x';
+import reactDom from 'eslint-plugin-react-dom';
 
 export default tseslint.config([
   globalIgnores(['dist']),
@@ -65,5 +97,5 @@ export default tseslint.config([
       // other options...
     },
   },
-])
+]);
 ```

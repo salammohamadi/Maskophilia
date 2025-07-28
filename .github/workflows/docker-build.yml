@@ -1,0 +1,45 @@
+name: Docker Build and Run
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: docker build -t maskophilia-app .
+
+      - name: Run Docker container
+        run: |
+          # Run the container in detached mode
+          docker run -d --name maskophilia-test -p 3000:80 maskophilia-app
+
+          # Wait a moment for the container to start
+          sleep 10
+
+          # Check if the container is running
+          docker ps
+
+          # Optional: Test if the application is responding
+          # curl -f http://localhost:3000 || exit 1
+
+          # Stop and remove the test container
+          docker stop maskophilia-test
+          docker rm maskophilia-test
+
+      - name: Clean up Docker images
+        if: always()
+        run: |
+          docker rmi maskophilia-app || true
+          docker system prune -f
