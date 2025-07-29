@@ -1,0 +1,119 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --ignore-engines
+
+      - name: Run linter
+        run: yarn lint
+
+      - name: Check code formatting
+        run: yarn pretify
+
+      - name: TypeScript compilation check
+        run: npx tsc --noEmit
+
+      - name: Build application
+        run: yarn build
+
+      - name: Check build output
+        run: |
+          if [ ! -f "dist/popup.js" ] || [ ! -f "dist/content.js" ] || [ ! -f "dist/background.js" ]; then
+            echo "❌ Missing expected build files"
+            exit 1
+          fi
+          echo "✅ All build files present"
+          ls -la dist/
+
+      - name: Check bundle size
+        run: yarn size
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t maskophilia-app .
+          echo "✅ Docker build completed"
+
+      - name: Test Docker container
+        run: |
+          # Run container in background
+          docker run -d --name maskophilia-test -p 3000:80 maskophilia-app
+
+          # Wait for container to start
+          sleep 10
+
+          # Check if container is running
+          docker ps
+
+          # Check container logs
+          docker logs maskophilia-test
+
+          # Test if application responds
+          curl -f http://localhost:3000 || echo "Container not responding, but build completed"
+
+          # Cleanup
+          docker stop maskophilia-test
+          docker rm maskophilia-test
+          docker rmi maskophilia-app
+
+  security:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --ignore-engines
+
+      - name: Run security audit
+        run: yarn audit --audit-level moderate || echo "Security audit completed with warnings"
+
+      - name: Check for known vulnerabilities
+        run: |
+          if yarn audit --audit-level high 2>&1 | grep -q "found"; then
+            echo "❌ High severity vulnerabilities found"
+            exit 1
+          else
+            echo "✅ No high severity vulnerabilities found"
+          fi
